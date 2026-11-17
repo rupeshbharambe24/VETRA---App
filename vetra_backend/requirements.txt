@@ -1,0 +1,13 @@
+# Backend dependencies (inferred from imports; versions unpinned)
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+ultralytics
+torch
+torchvision
+segmentation-models-pytorch
+opencv-contrib-python
+numpy
+matplotlib
+pillow
