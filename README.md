@@ -23,6 +23,21 @@ Given three uploaded images of an animal:
 | Udder side seg. | U-Net (ResNet34, 1-class, 512px) | binary udder mask | `models/udder-side-seg/udder_seg_best.pth` |
 | Udder attachment cls. | ResNet18 (3-class: weak/avg/strong) | attachment quality | `models/udder-side-seg/udder_cls_best.pth` |
 
+The three pose models are YOLOv8n-pose checkpoints trained in [VETRA-v3.0](https://github.com/rupeshbharambe24/VETRA-v3.0) (`args.yaml` next to each checkpoint records the training config). Training curves, confusion matrices and validation batches are committed alongside the weights, e.g. [`side-view/results.png`](vetra_backend/models/side-view/results.png).
+
+<details>
+<summary>Validation metrics (from each model's <code>results.csv</code>, best epoch by pose mAP50-95)</summary>
+
+| Model | Epochs (args.yaml) | Pose precision | Pose recall | Pose mAP50 | Pose mAP50-95 |
+|-------|--------------|----------------|-------------|-----------|---------------|
+| Side view (16 kp) | 100 | 0.999 | 1.000 | 0.995 | 0.994 |
+| Back view (10 kp) | 100 | 0.999 | 1.000 | 0.995 | 0.972 |
+| Udder bottom (8 kp) | 80 (74 logged) | 0.888 | 0.923 | 0.893 | 0.694 |
+
+These are scores on the project's own small validation splits; the near-ceiling side/back numbers reflect a small, homogeneous dataset and should not be read as field accuracy. No metrics file is committed for the udder segmentation/classification models.
+
+</details>
+
 ### Side keypoints (16)
 `hoof_rear, hoof_toe_tip, hoof_heel_hairline, hock, stifle, hook, pin, spine_last_rib_top, barrel_last_rib_bottom, withers, shoulder_point, elbow_point, front_hoof, abdomen_girth, abdomen_body_depth, udder_bottom`
 
@@ -83,6 +98,7 @@ VETRA---App/
 │   ├── scaling.py                   # ArUco detection + pinhole fallback
 │   ├── traits.py                    # Trait computation + NDDB-style scoring
 │   ├── reporting.py                 # HTML report generator
+│   ├── requirements.txt             # backend dependencies
 │   ├── docs/
 │   │   └── pipeline_overview.md
 │   └── models/                      # Trained model weights
@@ -90,12 +106,14 @@ VETRA---App/
 │       ├── back-view/
 │       ├── udder-bottom/
 │       └── udder-side-seg/
-└── vetra-ui/                        # React + Vite + Tailwind frontend
-    ├── src/
-    │   ├── pages/                   # TraitExtraction, DataRecords, Schemes, Insurance, Helpline, About, Contact
-    │   ├── components/
-    │   ├── lib/, types/
-    └── package.json
+├── vetra-ui/                        # React + Vite + Tailwind frontend
+│   ├── src/
+│   │   ├── pages/                   # TraitExtraction, DataRecords, Schemes, Insurance, Helpline, About, Contact
+│   │   ├── components/
+│   │   └── lib/, types/
+│   └── package.json
+├── LICENSE
+└── README.md
 ```
 
 ## Tech Stack
@@ -115,10 +133,10 @@ VETRA---App/
 ### Backend
 
 ```bash
-cd vetra_backend
+# run from the repository root: the backend is a package with relative imports
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install fastapi uvicorn pydantic ultralytics torch torchvision opencv-contrib-python numpy matplotlib pillow
+pip install -r vetra_backend/requirements.txt
 
 uvicorn vetra_backend.api_main:app --reload --port 8000
 ```
@@ -135,13 +153,29 @@ npm run dev
 
 Frontend runs at `http://localhost:5173`.
 
-## Related Repositories
+## VETRA project map
 
-- [vetra-main-app-latest-v3](https://github.com/rupeshbharambe24/vetra-main-app-latest-v3) — Flutter mobile companion app (field capture, offline records, PDF reports)
-- [vetra-depth-recorder-latest-v3](https://github.com/rupeshbharambe24/vetra-depth-recorder-latest-v3) — ARCore Depth API prototype (RGB + depth capture)
+VETRA (SIH 2025, Grand Finale Top 5) is split across several repositories. ML work evolved v1.1 → v2.0 → v2.2 → v3.0; the apps below consume or capture data for those models.
+
+| Repository | What it is | Stack | Status |
+|---|---|---|---|
+| [VETRA-v1.1](https://github.com/rupeshbharambe24/VETRA-v1.1) | First ML experiment: 6-keypoint YOLO pose on cow images + regression models mapping keypoint distances to body measurements (cm) | Python, YOLOv8-pose, scikit-learn | Archived (ML) |
+| [VETRA-v2.0](https://github.com/rupeshbharambe24/VETRA-v2.0) | Separate side- and back-view YOLOv8-pose keypoint models, focal-length scaling, measurement-extraction notebooks | Python, Ultralytics | Archived (ML) |
+| [VETRA-v2.2-with-app](https://github.com/rupeshbharambe24/VETRA-v2.2-with-app) | v2 models wrapped in a first FastAPI backend + React UI (`/api/v1/process-image`) | Python, FastAPI, React | Archived (ML + app) |
+| [VETRA-v3.0](https://github.com/rupeshbharambe24/VETRA-v3.0) | Final training: side (16 kp), back (10 kp) and udder-bottom (8 kp) YOLOv8n-pose models, ArUco scaling, dataset tooling | Python, Ultralytics, PyTorch | Final models |
+| **[VETRA---App](https://github.com/rupeshbharambe24/VETRA---App)** (this repo) | Final system: FastAPI backend serving the v3.0 pose models + udder U-Net/ResNet18, NDDB-style trait scoring, React web UI | FastAPI, PyTorch, React + Vite | Final (SIH 2025 finale) |
+| [vetra-main-app-latest-v3](https://github.com/rupeshbharambe24/vetra-main-app-latest-v3) | Flutter field app: capture protocol, offline SQLite records, PDF reports (not yet wired to the analysis API) | Flutter, Riverpod, SQLite | Prototype |
+| [vetra-depth-recorder-latest-v3](https://github.com/rupeshbharambe24/vetra-depth-recorder-latest-v3) | RGB + ARCore depth capture with intrinsics, pose and ZIP export | Flutter, Kotlin, ARCore | Prototype |
+| [VETRA---Depth-Recorder](https://github.com/rupeshbharambe24/VETRA---Depth-Recorder) | Earlier capture app: RGB frames + phone-sensor pose metadata (no real depth) | Expo / React Native, TypeScript | Superseded |
+| [vetra-pashu-scan](https://github.com/rupeshbharambe24/vetra-pashu-scan) | Early Lovable-generated PWA UI; Supabase edge functions return mock measurements | Vite, React, Supabase | Superseded (UI prototype) |
+| [pashudhan-ui](https://github.com/rupeshbharambe24/pashudhan-ui) | Fork of a teammate's Lovable UI prototype (landing page + mock prediction page) | Vite, React | Fork |
 
 ## Notes
 
 - Model weight files are committed (~200 MB total). Cloning may take a while.
 - The trait ranges and scoring rules are based on NDDB-style scoring but are tunable; thresholds live in `config.py` and `traits.py` for quick iteration.
 - This is a **research / prototype** system, not a regulatory-grade animal-evaluation product.
+
+## License
+
+[MIT](LICENSE) © 2025 Rupesh Bharambe
