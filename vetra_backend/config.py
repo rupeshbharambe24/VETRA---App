@@ -25,24 +25,23 @@ UDDER_CLS_MODEL_PATH = MODEL_DIR / "udder-side-seg" / "udder_cls_best.pth"
 ARUCO_DICT_NAME = "DICT_4X4_50"
 DEFAULT_MARKER_SIZE_CM = 7.0  # physical side length of printed marker (adjust to match yours)
 
-# Side view 16-kp order (must stay consistent with training)
+# Side view 14-kp order (must match the served side checkpoint, kpt_shape [14, 2];
+# same order as VETRA-v3.0 notebooks/train-side.ipynb)
 SIDE_KEYPOINT_NAMES = [
-    "hoof_rear",            # 0
-    "hoof_toe_tip",         # 1
-    "hoof_heel_hairline",   # 2
-    "hock",                 # 3
-    "stifle",               # 4
-    "hook",                 # 5
-    "pin",                  # 6
-    "spine_last_rib_top",   # 7
-    "barrel_last_rib_bottom",  # 8
-    "withers",              # 9
-    "shoulder_point",       # 10
-    "elbow_point",          # 11
-    "front_hoof",           # 12
-    "abdomen_girth",        # 13
-    "abdomen_body_depth",   # 14
-    "udder_bottom",         # 15
+    "hoof_rear_left",           # 0
+    "hoof_toe_tip_left",        # 1
+    "hoof_heel_hairline_left",  # 2
+    "hock_left",                # 3
+    "stifle_left",              # 4
+    "hook_left",                # 5
+    "pin_left",                 # 6
+    "spine_mid_hips",           # 7
+    "spine_last_rib_top",       # 8
+    "barrel_last_rib_bottom",   # 9
+    "shoulder_point",           # 10
+    "elbow_point",              # 11
+    "loin_midpoint",            # 12
+    "udder_floor_centre_rear",  # 13
 ]
 
 # Back view 10-kp order (matches train-back.ipynb mapping)

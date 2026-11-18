@@ -16,22 +16,24 @@ from .scaling import pixel_to_cm
 SIDE_KP_NAMES = config.SIDE_KEYPOINT_NAMES
 SIDE_NAME_TO_IDX = {n: i for i, n in enumerate(SIDE_KP_NAMES)}
 
-# Skeleton for visualization
+# Skeleton for visualization (14-kp, same as VETRA-v3.0 train-side.ipynb)
 SIDE_SKELETON_EDGES = [
     (0, 3), (0, 1), (0, 2),
-    (3, 4), (4, 6), (6, 5),
-    (5, 7), (7, 9), (9, 10), (10, 11), (11, 12),
-    (7, 8),
-    (8, 15), (3, 15),
+    (3, 4), (4, 6), (6, 5), (5, 7),
+    (7, 12), (12, 8), (8, 10),
+    (8, 9),
+    (9, 13), (3, 13),
+    (10, 11), (8, 11),
+    (10, 6),
 ]
 
-# Trait connections (length-style) based on 16-kp notebook
+# Trait connections (length-style) based on the 14-kp training notebook
 SIDE_TRAIT_CONNECTIONS = {
-    "stature": [("withers", "hoof_rear")],
-    "heart_girth": [("withers", "abdomen_girth")],
-    "body_length": [("shoulder_point", "pin")],
-    "body_depth": [("spine_last_rib_top", "abdomen_body_depth")],
-    "udder_depth": [("udder_bottom", "hock"), ("udder_bottom", "hoof_rear")],
+    "stature": [("spine_mid_hips", "hoof_rear_left")],
+    "heart_girth": [("spine_last_rib_top", "elbow_point")],
+    "body_length": [("shoulder_point", "pin_left")],
+    "body_depth": [("spine_last_rib_top", "barrel_last_rib_bottom")],
+    "udder_depth": [("udder_floor_centre_rear", "hock_left"), ("udder_floor_centre_rear", "hoof_rear_left")],
 }
 SIDE_TRAIT_EDGES_IDX = {
     trait: [(SIDE_NAME_TO_IDX[a], SIDE_NAME_TO_IDX[b]) for (a, b) in edges]
@@ -75,6 +77,12 @@ def _extract_best_keypoints(res) -> np.ndarray:
 def load_side_model(device: str | None = None) -> YOLO:
     device = device or config.DEFAULT_DEVICE
     model = YOLO(str(config.SIDE_MODEL_PATH))
+    kpt_shape = getattr(model.model, "yaml", {}).get("kpt_shape")
+    if kpt_shape and kpt_shape[0] != len(SIDE_KP_NAMES):
+        raise RuntimeError(
+            f"Side model predicts {kpt_shape[0]} keypoints but config.SIDE_KEYPOINT_NAMES "
+            f"lists {len(SIDE_KP_NAMES)}; update the names to match the checkpoint."
+        )
     model.to(device)
     return model
 
@@ -107,8 +115,8 @@ def compute_trait_lengths_pixels(kpts_xy: np.ndarray) -> Dict[str, Dict[str, Any
 
 
 def score_rump_angle(kpts: np.ndarray, img_height: float, tol_frac: float = 0.02):
-    hook = _safe_point(kpts, SIDE_NAME_TO_IDX["hook"])
-    pin = _safe_point(kpts, SIDE_NAME_TO_IDX["pin"])
+    hook = _safe_point(kpts, SIDE_NAME_TO_IDX["hook_left"])
+    pin = _safe_point(kpts, SIDE_NAME_TO_IDX["pin_left"])
     if hook is None or pin is None:
         return None
     dy = pin[1] - hook[1]
@@ -123,8 +131,8 @@ def score_rump_angle(kpts: np.ndarray, img_height: float, tol_frac: float = 0.02
 
 
 def score_rear_legs_set(kpts: np.ndarray):
-    hoof = _safe_point(kpts, SIDE_NAME_TO_IDX["hoof_rear"])
-    pin = _safe_point(kpts, SIDE_NAME_TO_IDX["pin"])
+    hoof = _safe_point(kpts, SIDE_NAME_TO_IDX["hoof_rear_left"])
+    pin = _safe_point(kpts, SIDE_NAME_TO_IDX["pin_left"])
     if hoof is None or pin is None:
         return None
     v = pin - hoof
@@ -139,9 +147,9 @@ def score_rear_legs_set(kpts: np.ndarray):
 
 
 def score_foot_angle(kpts: np.ndarray):
-    hoof = _safe_point(kpts, SIDE_NAME_TO_IDX["hoof_rear"])
-    toe = _safe_point(kpts, SIDE_NAME_TO_IDX["hoof_toe_tip"])
-    heel = _safe_point(kpts, SIDE_NAME_TO_IDX["hoof_heel_hairline"])
+    hoof = _safe_point(kpts, SIDE_NAME_TO_IDX["hoof_rear_left"])
+    toe = _safe_point(kpts, SIDE_NAME_TO_IDX["hoof_toe_tip_left"])
+    heel = _safe_point(kpts, SIDE_NAME_TO_IDX["hoof_heel_hairline_left"])
     if hoof is None or toe is None or heel is None:
         return None
 
@@ -166,7 +174,7 @@ def score_foot_angle(kpts: np.ndarray):
 
 def score_angularity(kpts: np.ndarray):
     top = _safe_point(kpts, SIDE_NAME_TO_IDX["spine_last_rib_top"])
-    bottom = _safe_point(kpts, SIDE_NAME_TO_IDX["abdomen_body_depth"])
+    bottom = _safe_point(kpts, SIDE_NAME_TO_IDX["barrel_last_rib_bottom"])
     if top is None or bottom is None:
         return None
     vec = bottom - top
@@ -184,7 +192,7 @@ def infer_side(img_bgr: np.ndarray, model: YOLO, device: str | None = None) -> D
     """
     Returns:
         {
-          "keypoints": np.ndarray (16,2),
+          "keypoints": np.ndarray (14,2),
           "length_traits_px": {...},
           "angle_scores": {...},
           "image_shape": (H,W)

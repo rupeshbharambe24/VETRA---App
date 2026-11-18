@@ -2,12 +2,12 @@
 
 Derived from notebooks in `Training and Processing`.
 
-## Side View (16 keypoints, YOLO pose)
-- Checkpoint: `runs/side_view/vetra_pose_side_16kp/weights/best.pt`
-- Keypoint order (fixed): hoof_rear, hoof_toe_tip, hoof_heel_hairline, hock, stifle, hook, pin, spine_last_rib_top, barrel_last_rib_bottom, withers, shoulder_point, elbow_point, front_hoof, abdomen_girth, abdomen_body_depth, udder_bottom.
-- Skeleton edges: rear hoof→hock/toe/heel, hock→stifle→pin→hook→spine_last_rib_top→withers→shoulder→elbow→front hoof, spine_last_rib_top→barrel_last_rib_bottom→udder_bottom plus hock→udder_bottom.
-- Length traits (px): stature (withers–hoof), heart_girth (withers–abdomen_girth, x2), body_length (shoulder–pin), body_depth (spine_last_rib_top–abdomen_body_depth, x2), udder_depth (udder_bottom to hock & hoof, summed).
-- Angle/score traits: rump_angle (hook vs pin vertical), rear_legs_set (hoof→pin vs vertical), foot_angle (hoof/toe/heel angle), angularity (spine_last_rib_top→abdomen_body_depth vs vertical). Udder attachment score injected from udder-side classifier.
+## Side View (14 keypoints, YOLO pose)
+- Checkpoint: `models/side-view/weights/best.pt` (`kpt_shape: [14, 2]`; `load_side_model` refuses a checkpoint whose keypoint count differs from `config.SIDE_KEYPOINT_NAMES`).
+- Keypoint order (fixed): hoof_rear_left, hoof_toe_tip_left, hoof_heel_hairline_left, hock_left, stifle_left, hook_left, pin_left, spine_mid_hips, spine_last_rib_top, barrel_last_rib_bottom, shoulder_point, elbow_point, loin_midpoint, udder_floor_centre_rear.
+- Skeleton edges: rear hoof→hock/toe/heel, hock→stifle→pin→hook→spine_mid_hips→loin_midpoint→spine_last_rib_top→shoulder→elbow, spine_last_rib_top→barrel_last_rib_bottom→udder_floor_centre_rear plus hock→udder_floor_centre_rear, spine_last_rib_top→elbow, shoulder→pin.
+- Length traits (px): stature (spine_mid_hips–hoof), heart_girth (spine_last_rib_top–elbow, x2), body_length (shoulder–pin), body_depth (spine_last_rib_top–barrel_last_rib_bottom, x2), udder_depth (udder_floor_centre_rear to hock & hoof, summed).
+- Angle/score traits: rump_angle (hook vs pin vertical), rear_legs_set (hoof→pin vs vertical), foot_angle (hoof/toe/heel angle), angularity (spine_last_rib_top→barrel_last_rib_bottom vs vertical). Udder attachment score injected from udder-side classifier.
 
 ## Back View (10 keypoints, YOLO pose)
 - Checkpoint: `runs/back_view/yolo_pose_back_v1/weights/best.pt`

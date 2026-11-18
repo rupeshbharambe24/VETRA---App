@@ -23,7 +23,7 @@ Given three uploaded images of an animal:
 | Udder side seg. | U-Net (ResNet34, 1-class, 512px) | binary udder mask | `models/udder-side-seg/udder_seg_best.pth` |
 | Udder attachment cls. | ResNet18 (3-class: weak/avg/strong) | attachment quality | `models/udder-side-seg/udder_cls_best.pth` |
 
-The three pose models are YOLOv8n-pose checkpoints trained in [VETRA-v3.0](https://github.com/rupeshbharambe24/VETRA-v3.0) (`args.yaml` next to each checkpoint records the training config). Note: the served side checkpoint has `kpt_shape: [14, 2]` (it is `yolo_pose_side_v1`), while `vetra_backend/config.py` lists 16 side keypoint names — the last two names come from the 16-kp experiment and are never predicted. Training curves, confusion matrices and validation batches are committed alongside the weights, e.g. [`side-view/results.png`](vetra_backend/models/side-view/results.png).
+The three pose models are YOLOv8n-pose checkpoints trained in [VETRA-v3.0](https://github.com/rupeshbharambe24/VETRA-v3.0) (`args.yaml` next to each checkpoint records the training config). The served side checkpoint has `kpt_shape: [14, 2]` (`yolo_pose_side_v1`); the backend checks this against `SIDE_KEYPOINT_NAMES` when it loads the model. Training curves, confusion matrices and validation batches are committed alongside the weights, e.g. [`side-view/results.png`](vetra_backend/models/side-view/results.png).
 
 <details>
 <summary>Validation metrics (from each model's <code>results.csv</code>, best epoch by pose mAP50-95)</summary>
@@ -38,8 +38,10 @@ These are scores on the project's own small validation splits; the near-ceiling 
 
 </details>
 
-### Side keypoints (16)
-`hoof_rear, hoof_toe_tip, hoof_heel_hairline, hock, stifle, hook, pin, spine_last_rib_top, barrel_last_rib_bottom, withers, shoulder_point, elbow_point, front_hoof, abdomen_girth, abdomen_body_depth, udder_bottom`
+### Side keypoints (14)
+`hoof_rear_left, hoof_toe_tip_left, hoof_heel_hairline_left, hock_left, stifle_left, hook_left, pin_left, spine_mid_hips, spine_last_rib_top, barrel_last_rib_bottom, shoulder_point, elbow_point, loin_midpoint, udder_floor_centre_rear`
+
+Side length traits: stature = 7→0, heart-girth proxy = 8→11 (×2), body length = 10→6, body depth = 8→9 (×2), udder depth = 13→3 + 13→0.
 
 ### Back keypoints (10)
 `hoof_rear_left/right, hock_left/right, pin_left/right, hook_left/right, tail_head, vulva_bottom`
